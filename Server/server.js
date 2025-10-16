@@ -30,7 +30,7 @@ const app = express();
 // Allow localhost (dev) and Vercel (prod)
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://local-hub.vercel.app/",
+  "https://local-hub.vercel.app",
 ];
 
 // ✅ CORS middleware
