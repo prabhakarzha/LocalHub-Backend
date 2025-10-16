@@ -1,7 +1,7 @@
 import Event from "../models/Event.js";
 import cloudinary from "../utils/cloudinary.js";
 
-// ✅ Create Event
+/* ---------------- CREATE EVENT ---------------- */
 export const createEvent = async (req, res) => {
   try {
     console.log("Incoming Event Data:", req.body);
@@ -28,7 +28,6 @@ export const createEvent = async (req, res) => {
 
     const createdBy = req.user?._id || null;
     const userRole = req.user?.role || "user";
-
     const eventStatus = userRole === "admin" ? "approved" : "pending";
 
     const event = await Event.create({
@@ -55,65 +54,99 @@ export const createEvent = async (req, res) => {
   }
 };
 
-// ✅ Get All Events (Admin Only)
+/* ---------------- GET ALL EVENTS (ADMIN) ---------------- */
+// ✅ Get all events (with pagination)
 export const getAllEvents = async (req, res) => {
   try {
-    if (req.user?.role !== "admin") {
-      return res.status(403).json({ success: false, message: "Access denied" });
-    }
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6; // 👈 Default 6 per page
+    const skip = (page - 1) * limit;
 
+    // Get total count (for pagination info)
+    const totalEvents = await Event.countDocuments();
+
+    // Fetch paginated events
     const events = await Event.find()
-      .sort({ date: 1 })
-      .populate("createdBy", "name email role");
+      .populate("createdBy", "name username email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    console.log("Admin fetched events:", events);
-
-    res.status(200).json({ success: true, events });
-    console.log(
-      "Admin fetched events:",
-      events.map((e) => ({ title: e.title, status: e.status }))
-    );
+    res.status(200).json({
+      success: true,
+      page,
+      totalPages: Math.ceil(totalEvents / limit),
+      totalEvents,
+      events,
+    });
   } catch (error) {
-    console.error("Error fetching all events:", error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Error fetching events:", error);
+    res.status(500).json({ success: false, message: "Server Error" });
   }
 };
 
-// ✅ Get Approved Events (Normal Users)
+/* ---------------- GET APPROVED EVENTS ---------------- */
 export const getApprovedEvents = async (req, res) => {
   try {
+    // Pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6;
+    const skip = (page - 1) * limit;
+
+    const total = await Event.countDocuments({ status: "approved" });
     const events = await Event.find({ status: "approved" })
       .sort({ date: 1 })
+      .skip(skip)
+      .limit(limit)
       .populate("createdBy", "name email role");
 
-    console.log("Approved events fetched:", events);
-
-    res.status(200).json({ success: true, events });
+    res.status(200).json({
+      success: true,
+      events,
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching approved events:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// ✅ Get Events created by logged-in user (User Dashboard)
+/* ---------------- GET USER EVENTS ---------------- */
 export const getUserEvents = async (req, res) => {
   try {
     const userId = req.user?._id;
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6;
+    const skip = (page - 1) * limit;
+
+    const total = await Event.countDocuments({ createdBy: userId });
     const events = await Event.find({ createdBy: userId })
       .sort({ date: 1 })
+      .skip(skip)
+      .limit(limit)
       .populate("createdBy", "name email role");
 
-    console.log(`Events fetched for user ${userId}:`, events);
-
-    res.status(200).json({ success: true, events });
+    res.status(200).json({
+      success: true,
+      events,
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching user events:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// ✅ Approve or Decline Event (Admin Only)
+/* ---------------- UPDATE EVENT STATUS (ADMIN) ---------------- */
 export const updateEventStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -143,7 +176,7 @@ export const updateEventStatus = async (req, res) => {
   }
 };
 
-// ✅ Update Event
+/* ---------------- UPDATE EVENT ---------------- */
 export const updateEvent = async (req, res) => {
   try {
     const event = await Event.findByIdAndUpdate(req.params.id, req.body, {
@@ -155,7 +188,7 @@ export const updateEvent = async (req, res) => {
   }
 };
 
-// ✅ Delete Event
+/* ---------------- DELETE EVENT ---------------- */
 export const deleteEvent = async (req, res) => {
   try {
     await Event.findByIdAndDelete(req.params.id);
@@ -165,7 +198,7 @@ export const deleteEvent = async (req, res) => {
   }
 };
 
-// ✅ Count Total Events
+/* ---------------- GET EVENT COUNT ---------------- */
 export const getEventCount = async (req, res) => {
   try {
     const totalEvents = await Event.countDocuments();
@@ -175,20 +208,33 @@ export const getEventCount = async (req, res) => {
   }
 };
 
-// ✅ NEW: Get Pending Events (Admin Only)
+/* ---------------- GET PENDING EVENTS (ADMIN) ---------------- */
 export const getPendingEvents = async (req, res) => {
   try {
     if (req.user?.role !== "admin") {
       return res.status(403).json({ success: false, message: "Access denied" });
     }
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 6;
+    const skip = (page - 1) * limit;
+
+    const total = await Event.countDocuments({ status: "pending" });
     const pendingEvents = await Event.find({ status: "pending" })
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
       .populate("createdBy", "name email role");
 
-    console.log("Pending events fetched:", pendingEvents.length);
-
-    res.status(200).json({ success: true, events: pendingEvents });
+    res.status(200).json({
+      success: true,
+      events: pendingEvents,
+      pagination: {
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching pending events:", error);
     res.status(500).json({ success: false, message: error.message });
