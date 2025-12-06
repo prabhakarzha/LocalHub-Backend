@@ -10,7 +10,7 @@ const router = express.Router();
 
 router.post("/", authMiddleware, createServiceBooking);
 
-router.get("/", authMiddleware, getUserServiceBookings);
+router.get("/", getUserServiceBookings);
 
 router.delete("/:id", authMiddleware, cancelServiceBooking);
 
