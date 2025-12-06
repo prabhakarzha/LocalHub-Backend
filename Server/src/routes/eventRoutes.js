@@ -3,7 +3,7 @@ import {
   createEvent,
   getApprovedEvents,
   getAllEvents,
-  getPendingEvents, // ✅ import this
+  getPendingEvents,
   getUserEvents,
   updateEventStatus,
   updateEvent,
@@ -17,47 +17,47 @@ const router = express.Router();
 
 /* 
 ===========================
-   📦 USER ROUTES
+   USER ROUTES
 ===========================
 */
 
-// ✅ User creates a new event (default status: pending)
+// Create new event (protected)
 router.post("/", authMiddleware, upload.single("image"), createEvent);
 
-// ✅ Get approved events (visible on /events page for normal users)
+// Get approved events (protected)
 router.get("/", authMiddleware, getApprovedEvents);
 
-// ✅ Get all events created by the logged-in user (dashboard)
+// Get events created by logged-in user (protected)
 router.get("/user", authMiddleware, getUserEvents);
 
 /* 
 ===========================
-   🛡️ ADMIN ROUTES
+   ADMIN ROUTES
 ===========================
 */
 
-// ✅ Get only pending events (for admin approval panel)
-router.get("/pending", authMiddleware, getPendingEvents); // 🔥 Add this line
+// Pending events (protected)
+router.get("/pending", authMiddleware, getPendingEvents);
 
-// ✅ Get all events (admin dashboard)
+// All events (protected)
 router.get("/admin", authMiddleware, getAllEvents);
 
-// ✅ Approve or Decline event (admin only)
+// Update event status (protected)
 router.patch("/:id/status", authMiddleware, updateEventStatus);
 
 /* 
 ===========================
-   ⚙️ COMMON ROUTES
+   COMMON ROUTES
 ===========================
 */
 
-// ✅ Update event details
+// Update event (protected)
 router.put("/:id", authMiddleware, updateEvent);
 
-// ✅ Delete event
+// Delete event (protected)
 router.delete("/:id", authMiddleware, deleteEvent);
 
-// ✅ Get total count of all events
-router.get("/count", authMiddleware, getEventCount);
+// ***** PUBLIC EVENT COUNT *****
+router.get("/count", getEventCount);
 
 export default router;
