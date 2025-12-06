@@ -67,6 +67,6 @@ router.put("/:id", authMiddleware, updateService);
 router.delete("/:id", authMiddleware, deleteService);
 
 // ✅ Get total count of all services
-router.get("/count", authMiddleware, getServiceCount);
+router.get("/count", getServiceCount);
 
 export default router;
