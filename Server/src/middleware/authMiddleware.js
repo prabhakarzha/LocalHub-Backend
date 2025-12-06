@@ -2,6 +2,15 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const authMiddleware = async (req, res, next) => {
+  // 🔓 1) Public routes: skip auth for count APIs
+  if (
+    req.method === "GET" &&
+    (req.originalUrl === "/api/events/count" ||
+      req.originalUrl === "/api/services/count")
+  ) {
+    return next();
+  }
+
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
